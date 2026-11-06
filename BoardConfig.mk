@@ -27,7 +27,6 @@ AB_OTA_PARTITIONS += \
     lk \
     product \
     system \
-    system_ext \
     vbmeta \
     vbmeta_system \
     vbmeta_vendor \
@@ -102,15 +101,16 @@ TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 TARGET_COPY_OUT_VENDOR := vendor
 TARGET_COPY_OUT_PRODUCT := product
-TARGET_COPY_OUT_SYSTEM_EXT := system_ext
 
 # Dynamic partitions: super = 0x140000000 (5 GiB).
 # Virtual A/B => a single copy of the group; group size = super - 4 MiB.
-# TODO: confirm group name + member list with `lpdump` on device.
+# Members confirmed on device via `ls /dev/block/mapper`:
+#   system_a, vendor_a, product_a (+ system_b). No system_ext/odm.
+# TODO: confirm group name from the super lp metadata.
 BOARD_SUPER_PARTITION_SIZE := 5368709120
 BOARD_SUPER_PARTITION_GROUPS := main
 BOARD_MAIN_SIZE := 5364514816
-BOARD_MAIN_PARTITION_LIST := system system_ext vendor product
+BOARD_MAIN_PARTITION_LIST := system vendor product
 
 # Platform version / patch level (TWRP convention: max values so the
 # bootloader's anti-rollback never rejects the recovery image).
