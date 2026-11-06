@@ -1,0 +1,26 @@
+# TWRP-specific partition flags for the Maxwest Astro A65 (MX-A65)
+# Format: <mount_point> <fs_type> <device> [flags=...]
+
+/boot           emmc    /dev/block/by-name/boot          flags=slotselect;backup=1;flashimg=1;display="Boot"
+/dtbo           emmc    /dev/block/by-name/dtbo          flags=slotselect;backup=1;flashimg=1;display="Dtbo"
+/vbmeta         emmc    /dev/block/by-name/vbmeta        flags=slotselect;backup=1;flashimg=1;display="VBMeta"
+/vbmeta_system  emmc    /dev/block/by-name/vbmeta_system flags=slotselect;backup=1;flashimg=1;display="VBMeta System"
+/vbmeta_vendor  emmc    /dev/block/by-name/vbmeta_vendor flags=slotselect;backup=1;flashimg=1;display="VBMeta Vendor"
+/lk             emmc    /dev/block/by-name/lk            flags=slotselect;backup=1;flashimg=1;display="LK (bootloader)"
+/tee            emmc    /dev/block/by-name/tee           flags=slotselect;backup=1;display="TEE"
+/md1img         emmc    /dev/block/by-name/md1img        flags=slotselect;backup=1;display="Modem"
+/logo           emmc    /dev/block/by-name/logo          flags=backup=1;flashimg=1;display="Boot logo"
+/super          emmc    /dev/block/by-name/super         flags=backup=1;flashimg=1;display="Super (raw)"
+
+# IMEI / calibration: back these up, never wipe them
+/nvram          emmc    /dev/block/by-name/nvram         flags=backup=1;display="NVRAM (IMEI)"
+/proinfo        emmc    /dev/block/by-name/proinfo       flags=backup=1;display="Proinfo"
+/nvdata         ext4    /dev/block/by-name/nvdata        flags=backup=1;display="NVdata"
+/nvcfg          ext4    /dev/block/by-name/nvcfg         flags=backup=1;display="NVcfg"
+/protect_f      ext4    /dev/block/by-name/protect1      flags=backup=1;display="Protect_f"
+/protect_s      ext4    /dev/block/by-name/protect2      flags=backup=1;display="Protect_s"
+/seccfg         emmc    /dev/block/by-name/seccfg        flags=backup=1;display="Seccfg"
+
+# Removable storage
+/external_sd    vfat    /dev/block/mmcblk1p1 /dev/block/mmcblk1  flags=display="Micro SD";storage;wipeingui;removable
+/usb_otg        vfat    /dev/block/sda1 /dev/block/sda           flags=display="USB OTG";storage;wipeingui;removable

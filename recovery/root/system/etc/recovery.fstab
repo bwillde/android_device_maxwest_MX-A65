@@ -1,0 +1,29 @@
+# TWRP recovery.fstab for the Maxwest Astro A65 (MX-A65)
+# AOSP (fs_mgr) format. Derived from the stock
+# /first_stage_ramdisk/fstab.mt6761 and /system/etc/recovery.fstab in boot_a.
+# TWRP-only entries (backup/display flags) live in twrp.flags.
+#
+# <src>                         <mnt_point>     <type>  <mnt_flags>   <fs_mgr_flags>
+
+# Logical partitions inside super (dynamic, A/B)
+system                          /system_root    ext4    ro            wait,logical,slotselect,first_stage_mount
+system_ext                      /system_ext     ext4    ro            wait,logical,slotselect,first_stage_mount
+vendor                          /vendor         ext4    ro            wait,logical,slotselect,first_stage_mount
+product                         /product        ext4    ro            wait,logical,slotselect,first_stage_mount
+
+# Metadata (MTK stores /metadata on md_udc, NOT the "metadata" partition)
+/dev/block/by-name/md_udc       /metadata       ext4    noatime,nosuid,nodev,discard  wait,check,formattable,first_stage_mount
+
+# Userdata (FBE v2 + metadata encryption)
+/dev/block/by-name/userdata     /data           ext4    noatime,nosuid,nodev,nobarrier,noauto_da_alloc,errors=panic,inlinecrypt  latemount,wait,check,quota,reservedsize=128M,formattable,resize,checkpoint=block,fileencryption=aes-256-xts:aes-256-cts:v2,keydirectory=/metadata/vold/metadata_encryption
+
+# Boot-chain images (A/B)
+/dev/block/by-name/boot         /boot           emmc    defaults      slotselect
+/dev/block/by-name/dtbo         /dtbo           emmc    defaults      slotselect
+/dev/block/by-name/vbmeta       /vbmeta         emmc    defaults      slotselect
+/dev/block/by-name/vbmeta_system /vbmeta_system emmc    defaults      slotselect
+/dev/block/by-name/vbmeta_vendor /vbmeta_vendor emmc    defaults      slotselect
+
+# Removable storage
+/devices/platform/externdevice* auto            auto    defaults      voldmanaged=sdcard1:auto,encryptable=userdata
+/devices/platform/mt_usb*       auto            vfat    defaults      voldmanaged=usbotg:auto

@@ -1,0 +1,99 @@
+name: Build TWRP (MX-A65)
+
+on:
+  workflow_dispatch:
+    inputs:
+      twrp_branch:
+        description: "TWRP minimal-manifest branch"
+        required: true
+        default: "twrp-12.1"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 340
+    env:
+      DEVICE_PATH: device/maxwest/MX-A65
+      DEVICE_NAME: MX-A65
+      MAKEFILE_NAME: twrp_MX-A65
+      BUILD_TARGET: bootimage   # recovery-as-boot device -> boot.img
+
+    steps:
+      - name: Free up runner disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
+      - name: Check out device tree
+        uses: actions/checkout@v4
+        with:
+          path: device-tree
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib \
+            gcc-multilib git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev \
+            libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
+            libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc \
+            zip zlib1g-dev python-is-python3 unzip
+          mkdir -p ~/bin
+          curl -sSL https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          df -h /
+
+      - name: Sync TWRP minimal manifest (${{ inputs.twrp_branch }})
+        run: |
+          mkdir -p ~/twrp && cd ~/twrp
+          repo init --depth=1 --no-repo-verify \
+            -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git \
+            -b ${{ inputs.twrp_branch }} -g default,-mips,-darwin,-notdefault
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          df -h /
+
+      - name: Place device tree
+        run: |
+          mkdir -p ~/twrp/$(dirname $DEVICE_PATH)
+          cp -r $GITHUB_WORKSPACE/device-tree ~/twrp/$DEVICE_PATH
+          rm -rf ~/twrp/$DEVICE_PATH/.git ~/twrp/$DEVICE_PATH/.github
+
+      - name: Build
+        run: |
+          cd ~/twrp
+          set +e
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          lunch ${MAKEFILE_NAME}-eng
+          mka ${BUILD_TARGET} -j$(nproc --all) 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Collect outputs
+        if: always()
+        run: |
+          mkdir -p ~/out-artifacts
+          OUT=~/twrp/out/target/product/$DEVICE_NAME
+          cp ~/twrp/build.log ~/out-artifacts/ 2>/dev/null || true
+          cp $OUT/boot.img ~/out-artifacts/twrp-$DEVICE_NAME-boot.img 2>/dev/null || true
+          cp $OUT/ramdisk-recovery.img ~/out-artifacts/ 2>/dev/null || true
+          cp $OUT/recovery/root/system/etc/recovery.fstab ~/out-artifacts/ 2>/dev/null || true
+          ls -la ~/out-artifacts
+          (cd ~/out-artifacts && sha256sum * > SHA256SUMS) || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twrp-${{ env.DEVICE_NAME }}-${{ github.run_number }}
+          path: ~/out-artifacts/
